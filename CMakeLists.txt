@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(ExcelTableApp)
+project(HotelManagementApp)
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -22,12 +22,12 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(tabulate)
 
 # Add your main.cpp or other source files
-add_executable(ExcelTableApp main.cpp)
+add_executable(HotelManagementApp main.cpp)
 
 # Link libraries
-target_link_libraries(ExcelTableApp PRIVATE xlnt tabulate)
+target_link_libraries(HotelManagementApp PRIVATE xlnt tabulate)
 
-add_custom_command(TARGET ExcelTableApp POST_BUILD
+add_custom_command(TARGET HotelManagementApp POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${CMAKE_SOURCE_DIR}/build/_deps/xlnt-build/source/Release/xlnt.dll"
-        $<TARGET_FILE_DIR:ExcelTableApp>)
+        $<TARGET_FILE_DIR:HotelManagementApp>)
