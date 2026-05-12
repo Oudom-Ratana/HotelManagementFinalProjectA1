@@ -5,6 +5,7 @@
 #include <xlnt/xlnt.hpp>
 using namespace std;
 using namespace tabulate;
+using namespace xlnt;
 
 class Room
 {
@@ -18,9 +19,11 @@ private:
 
 public:
     string name;
+    string gender;
     int phoneNum;
     int roomIdBook;
     string checkInDate;
+    string checkOutDate;
     char comfirmBooking;
 
 public:
@@ -33,8 +36,22 @@ public:
         this->pricePerNight = pricePerNight;
         this->isAvailable = isAvailable;
     }
+    Room(string name, string gender, int phoneNum, string checkInDate, string checkOutDate,int roomId, string roomtype, string equipments, float pricePerNight, int isAvailable)
+    {
+        this->name = name;
+        this->gender = gender;
+        this->phoneNum = phoneNum;
+        this->checkInDate = checkInDate;
+        this->checkOutDate = checkOutDate;
+        this->roomId = roomId;
+        this->roomType = roomtype;
+        this->equipments = equipments;
+        this->pricePerNight = pricePerNight;
+        this->isAvailable = isAvailable;
+    }
     void input()
     {
+        
         cout << "Enter roomID: ";
         cin >> roomId;
         cin.ignore();
@@ -53,6 +70,7 @@ public:
     // }
     void update()
     {
+        
         cin.ignore();
         cout << "Enter Room Type(Single, Double, VIPsingle, VIPdouble): ";
         cin >> roomType;
@@ -67,6 +85,10 @@ public:
     {
         return name;
     }
+    string getGender()
+    {
+        return gender;
+    }
     int getPhoneNum()
     {
         return phoneNum;
@@ -74,6 +96,10 @@ public:
     string getCheckInDate()
     {
         return checkInDate;
+    }
+    string getCheckOutDate()
+    {
+        return checkOutDate;
     }
     int getRoomId()
     {
@@ -118,15 +144,277 @@ public:
     }
 };
 
+void mergeBookingData(vector<Room>& roomLists, vector<Room>& bookedRooms)
+{
+    for (auto& booked : bookedRooms)
+    {
+        auto iD = find_if(
+            roomLists.begin(), 
+            roomLists.end(),
+            [&](Room& bookData) { return bookData.getRoomId() == booked.getRoomId(); });
+        if (iD != roomLists.end())
+        {
+            
+            iD->name = booked.name;
+            iD->gender = booked.gender;
+            iD->phoneNum = booked.phoneNum;
+            iD->checkInDate = booked.checkInDate;
+            iD->checkOutDate = booked.checkOutDate;
+            iD->setAvailable(0); 
+        }
+    }
+}
+
+void writeBookingToSheet(string filename, string sheetName, vector<Room>& roomLists)
+{
+    workbook wb;
+    try { wb.load(filename); }
+    catch(...) { cout << "Cannot write into the file";}
+
+    worksheet ws;
+    if (wb.contains(sheetName))
+        ws = wb.sheet_by_title(sheetName);
+    else
+        ws = wb.create_sheet();
+        ws.title(sheetName);
+
+    
+    ws.cell("A1").value("Guest Name");
+    ws.cell("B1").value("Gender");
+    ws.cell("C1").value("Phone Number");
+    ws.cell("D1").value("Check In Date");
+    ws.cell("E1").value("Check Out Date");
+    ws.cell("F1").value("Room ID");
+    ws.cell("G1").value("Room Type");
+    ws.cell("H1").value("Equipments");
+    ws.cell("I1").value("Price Per Night");
+    ws.cell("J1").value("Availability");
+
+    int row = 2;
+    for (auto& room : roomLists)
+    {
+        if (room.getAvailability() == 0)   
+        {
+            ws.cell("A" + to_string(row)).value(room.name);
+            ws.cell("B" + to_string(row)).value(room.gender);
+            ws.cell("C" + to_string(row)).value(to_string(room.phoneNum));
+            ws.cell("D" + to_string(row)).value(room.checkInDate);
+            ws.cell("E" + to_string(row)).value(room.checkOutDate);
+            ws.cell("F" + to_string(row)).value(to_string(room.getRoomId()));
+            ws.cell("G" + to_string(row)).value(room.getRoomType());
+            ws.cell("H" + to_string(row)).value(room.getEquipments());
+            ws.cell("I" + to_string(row)).value(to_string(room.getPricePerNight()));
+            ws.cell("J" + to_string(row)).value("Booked");
+            row++;
+        }
+    }
+
+    wb.save(filename);
+    cout << "Booking sheet saved." << endl;
+}
+
+vector<Room> readBookingFromSheet(string filename,
+                                  string sheetName)
+{
+    vector<Room> roomLists;
+    workbook wb;
+
+    try
+    {
+        wb.load(filename);
+    }
+    catch (...)
+    {
+        cout << "Cannot read data from file!" << endl;
+        return roomLists;
+    }
+
+        if (!wb.contains(sheetName))
+    {
+        cout << "Sheet does not exist!" << endl;
+        return roomLists;
+    }
+
+    worksheet ws = wb.sheet_by_title(sheetName);
+
+    for (auto row : ws.rows(false))
+    {
+        
+        if (row[0].to_string() == "Guest Name")
+            continue;
+
+        string name = row[0].to_string();
+        string gender = row[1].to_string();
+        int phoneNum = stoi(row[2].to_string());
+        string checkInDate = row[3].to_string();
+        string checkOutDate = row[4].to_string();
+
+        int roomId = stoi(row[5].to_string());
+        string roomType = row[6].to_string();
+        string equipments = row[7].to_string();
+
+        float pricePerNight =
+            stof(row[8].to_string());
+
+        int isAvailable = 0;
+        
+        // My own code
+        // int isAvailable;
+        // if (row[9].to_string() == "Available")
+        // {
+        //     isAvailable = 1;
+        // }
+        // else
+        // {
+        //     isAvailable = 0;
+        // }
+
+        
+        Room bookData(name,
+                      gender,
+                      phoneNum,
+                      checkInDate,
+                      checkOutDate,
+                      roomId,
+                      roomType,
+                      equipments,
+                      pricePerNight,
+                      isAvailable);
+
+        roomLists.push_back(bookData);
+    }
+
+    return roomLists;
+}
+
+// void writeVectorToExcel(string filename, vector<Room> roomLists)
+// {
+
+//     workbook wb;
+//     worksheet ws1 = wb.active_sheet();
+
+//     ws1.title("Room Data");
+
+//     ws1.cell("A1").value("Room ID");
+//     ws1.cell("B1").value("Room Type");
+//     ws1.cell("C1").value("Equipments");
+//     ws1.cell("D1").value("Price Per Night");
+//     ws1.cell("E1").value("Availability");
+
+//     int row = 2;
+//     for (auto room : roomLists)
+//     {
+//         ws1.cell("A" + to_string(row)).value(to_string(room.getRoomId()));
+//         ws1.cell("B" + to_string(row)).value(room.getRoomType());
+//         ws1.cell("C" + to_string(row)).value(room.getEquipments());
+//         ws1.cell("D" + to_string(row)).value(to_string(room.getPricePerNight()));
+//         ws1.cell("E" + to_string(row)).value(room.getAvailabilityString());
+//         row++;
+//     }
+
+//     wb.save(filename);
+//     cout << "Successfully saved data to excel file!!!" << endl;
+// }
+
+// // from deepseek
+void writeVectorToExcel(string filename, vector<Room> roomLists)
+{
+    workbook wb;
+    
+    
+    try {
+        wb.load(filename);
+    }
+    catch (...) {
+        
+    }
+    
+    worksheet ws1;
+    if (wb.contains("Room Data")) {
+        ws1 = wb.sheet_by_title("Room Data");
+        
+    } else {
+        ws1 = wb.create_sheet();
+        ws1.title("Room Data");
+    }
+
+
+    ws1.cell("A1").value("Room ID");
+    ws1.cell("B1").value("Room Type");
+    ws1.cell("C1").value("Equipments");
+    ws1.cell("D1").value("Price Per Night");
+    ws1.cell("E1").value("Availability");
+
+
+    int row = 2;
+    for (auto room : roomLists)
+    {
+        ws1.cell("A" + to_string(row)).value(to_string(room.getRoomId()));
+        ws1.cell("B" + to_string(row)).value(room.getRoomType());
+        ws1.cell("C" + to_string(row)).value(room.getEquipments());
+        ws1.cell("D" + to_string(row)).value(to_string(room.getPricePerNight()));
+        ws1.cell("E" + to_string(row)).value(room.getAvailabilityString());
+        row++;
+    }
+
+    
+    wb.save(filename);
+    cout << "Successfully saved data to excel file!!!" << endl;
+}
+
+vector<Room> readRoomFromExcel(string &filename)
+{
+    vector<Room> roomLists;
+    workbook wb;
+    try
+    {
+        wb.load(filename);
+    }
+    catch (...)
+    {
+        cout << "Cannot read the data from file" << endl;
+        return roomLists;
+    }
+
+    worksheet ws1 = wb.active_sheet();
+    for (auto row : ws1.rows(false))
+    {
+        if (row[0].to_string() == "Room ID")
+            continue;
+
+        int roomId = stoi(row[0].to_string());
+        string roomType = row[1].to_string();
+        string equipments = row[2].to_string();
+        float pricePerNight = stof(row[3].to_string());
+        int isAvailable;
+        if (row[4].to_string() == "Available")
+        {
+            isAvailable = 1;
+        }
+        else if (row[4].to_string() == "Booked")
+        {
+            isAvailable = 0;
+        }
+
+        Room roomData(roomId, roomType, equipments, pricePerNight, isAvailable);
+        roomLists.push_back(roomData);
+    }
+
+    return roomLists;
+}
+
+
 class Guest : public Room
 {
 
 public:
-    void bookingRoom(vector<Room> &roomLists)
+    void bookingRoom(vector<Room> &roomLists, string& filename)
     {
         cin.ignore();
         cout << "Enter Your Name: ";
         getline(cin, name);
+        cout << "Enter Your gender: ";
+        getline(cin, gender);
         cout << "Enter Your Phone Number: ";
         cin >> phoneNum;
         cout << "Enter Room ID: ";
@@ -134,6 +422,8 @@ public:
         cin.ignore();
         cout << "Enter CheckIn Date(dd/mm/yyyy): ";
         getline(cin, checkInDate);
+        cout << "Enter CheckOut Date(dd/mm/yyyy): ";
+        getline(cin, checkOutDate);
         cout << "Comfirm Booking?(Y/N): ";
         cin >> comfirmBooking;
         if (comfirmBooking == 'y' || comfirmBooking == 'Y')
@@ -148,11 +438,17 @@ public:
             if (result != roomLists.end())
             {
 
-                result->setAvailable(0);
+                result->setAvailable(0); // 0 mean booked , 1 means available
                 result->name = name;
+                result->gender = gender;
                 result->phoneNum = phoneNum;
                 result->checkInDate = checkInDate;
+                result->checkOutDate = checkOutDate;
 
+                // Storing the data into the book 
+                //writeBookingVectorToExcel(filename,roomLists );
+                writeVectorToExcel(filename, roomLists);
+                writeBookingToSheet(filename, "Booked Room", roomLists); 
                 cout << "Successfully Booked the room!" << endl;
             }
             else
@@ -163,6 +459,60 @@ public:
         else
         {
             cout << "Booking Cancelled!" << endl;
+        }
+    }
+
+    void showReceipt(vector<Room> &roomLists)
+    {
+        auto result = find_if(
+            roomLists.begin(),
+            roomLists.end(),
+            [&](Room &room)
+            {
+                return room.getAvailability() == 0;
+            });
+        if (result != roomLists.end())
+        {
+            int guestPhone;
+            cout << "Enter your phone number to see your receipt: ";
+            cin >> guestPhone;
+
+            bool found = false;
+            Table table;
+            table.add_row({"Name", "Gender", "Phone Number", "CheckIn Date", "RoomID", "RoomType", "Equipments", "Price/night($)"});
+
+            for (auto &room : roomLists)
+            {
+                if ((room.getAvailability() == 0) && (room.phoneNum == guestPhone))
+                {
+                    stringstream ss;
+                    ss << fixed << setprecision(2) << room.getPricePerNight();
+                    string priceStr = ss.str();
+                    table.add_row({room.name,
+                                   room.gender,
+                                   to_string(room.phoneNum),
+                                   room.checkInDate,
+                                   to_string(room.getRoomId()),
+                                   room.getRoomType(),
+                                   room.getEquipments(),
+                                   priceStr});
+                    found = true;
+                }
+            }
+
+            if (found == true)
+            {
+                table[0].format().font_style({FontStyle::bold}).font_align({FontAlign::center});
+                cout << table << endl;
+            }
+            else
+            {
+                cout << "No booking found for phone number " << guestPhone << endl;
+            }
+        }
+        else
+        {
+            cout << "No Room Booked !!!" << endl;
         }
     }
 
@@ -210,59 +560,6 @@ public:
     //             cout << "No Booked Room!!!" << endl;
     //         }
     // }
-
-    void showReceipt(vector<Room> &roomLists)
-    {
-        auto result = find_if(
-            roomLists.begin(),
-            roomLists.end(),
-            [&](Room &room)
-            {
-                return room.getAvailability() == 0;
-            });
-        if (result != roomLists.end())
-        {
-            int guestPhone;
-            cout << "Enter your phone number to see your receipt: ";
-            cin >> guestPhone;
-
-            bool found = false;
-            Table table;
-            table.add_row({"Name", "Phone Number", "CheckIn Date", "RoomID", "RoomType", "Equipments", "Price/night($)"});
-
-            for (auto &room : roomLists)
-            {
-                if ((room.getAvailability() == 0) && (room.phoneNum == guestPhone))
-                {
-                    stringstream ss;
-                    ss << fixed << setprecision(2) << room.getPricePerNight();
-                    string priceStr = ss.str();
-                    table.add_row({room.name,
-                                   to_string(room.phoneNum),
-                                   room.checkInDate,
-                                   to_string(room.getRoomId()),
-                                   room.getRoomType(),
-                                   room.getEquipments(),
-                                   priceStr});
-                    found = true;
-                }
-            }
-
-            if (found == true)
-            {
-                table[0].format().font_style({FontStyle::bold}).font_align({FontAlign::center});
-                cout << table << endl;
-            }
-            else
-            {
-                cout << "No booking found for phone number " << guestPhone << endl;
-            }
-        }
-        else
-        {
-            cout << "No Room Booked !!!" << endl;
-        }
-    }
 
     void searchGuestRoomById(vector<Room> &roomLists)
     {
@@ -508,22 +805,171 @@ void pressEnter()
     cin.get();
 }
 
+
+// void writeBookingToSheet(workbook &wb, string sheetName, vector<Room> roomLists)
+// {
+//     worksheet ws;
+
+//     // Check if sheet already exists
+//     if (wb.contains(sheetName))
+//     {
+//         ws = wb.sheet_by_title(sheetName);
+//     }
+//     else
+//     {
+//         ws = wb.create_sheet();
+//         ws.title(sheetName);
+//     }
+
+//     // Header
+//     ws.cell("A1").value("Guest Name");
+//     ws.cell("B1").value("Gender");
+//     ws.cell("C1").value("Phone Number");
+//     ws.cell("D1").value("Check In Date");
+//     ws.cell("E1").value("Check Out Date");
+//     ws.cell("F1").value("Room ID");
+//     ws.cell("G1").value("Room Type");
+//     ws.cell("H1").value("Equipments");
+//     ws.cell("I1").value("Price Per Night");
+//     ws.cell("J1").value("Availability");
+
+//     int row = 2;
+
+//     for (auto room : roomLists)
+//     {
+//         ws.cell("A" + to_string(row)).value(room.getName());
+//         ws.cell("B" + to_string(row)).value(room.getGender());
+//         ws.cell("C" + to_string(row)).value(to_string(room.getPhoneNum()));
+//         ws.cell("D" + to_string(row)).value(room.getCheckInDate());
+//         ws.cell("E" + to_string(row)).value(room.getCheckOutDate());
+//         ws.cell("F" + to_string(row)).value(to_string(room.getRoomId()));
+//         ws.cell("G" + to_string(row)).value(room.getRoomType());
+//         ws.cell("H" + to_string(row)).value(room.getEquipments());
+//         ws.cell("I" + to_string(row)).value(to_string(room.getPricePerNight()));
+//         ws.cell("J" + to_string(row)).value(room.getAvailabilityString());
+
+//         row++;
+//     }
+// }
+
+// void saveWorkbook(workbook &wb, string filename)
+// {
+//     wb.save(filename);
+//     cout << "Successfully saved workbook!" << endl;
+// }
+
+
+// Our original code here ! 
+// void writeBookingVectorToExcel(string filename, vector<Room> roomLists)
+// {
+
+//     workbook wb;
+//     worksheet ws2 = wb.active_sheet();
+//     ws2.title("Booking Room Data");
+
+//     ws2.cell("A1").value("Guest Name");
+//     ws2.cell("B1").value("Gender");
+//     ws2.cell("C1").value("Phone Number");
+//     ws2.cell("D1").value("Check In Date");
+//     ws2.cell("E1").value("Check Out Date");
+//     ws2.cell("F1").value("Room ID");
+//     ws2.cell("G1").value("Room Type");
+//     ws2.cell("H1").value("Equipments");
+//     ws2.cell("I1").value("Price Per Night");
+//     ws2.cell("J1").value("Availability");
+
+//     int row = 2;
+//     for (auto room : roomLists)
+//     {
+
+//         ws2.cell("A" + to_string(row)).value(room.getName());
+//         ws2.cell("B" + to_string(row)).value(room.getGender());
+//         ws2.cell("C" + to_string(row)).value(to_string(room.getPhoneNum()));
+//         ws2.cell("D" + to_string(row)).value(room.getCheckInDate());
+//         ws2.cell("E" + to_string(row)).value(room.getCheckOutDate());
+//         ws2.cell("F" + to_string(row)).value(to_string(room.getRoomId()));
+//         ws2.cell("G" + to_string(row)).value(room.getRoomType());
+//         ws2.cell("H" + to_string(row)).value(room.getEquipments());
+//         ws2.cell("I" + to_string(row)).value(to_string(room.getPricePerNight()));
+//         ws2.cell("J" + to_string(row)).value(room.getAvailabilityString());
+//         row++;
+//     }
+
+//     wb.save(filename);
+//     cout << "Successfully saved data to excel file!!!" << endl;
+// }
+
+// For Reading the booking room data 
+// vector<Room> readBookingRoomFromExcel(string &filename)
+// {
+//     vector<Room> roomLists;
+//     try
+//     {
+//         wb.load(filename);
+//     }
+//     catch (...)
+//     {
+//         cout << "Cannot read the data from file" << endl;
+//         return roomLists;
+//     }
+    
+//     workbook wb;
+//     worksheet ws2 = wb.active_sheet();
+//     for (auto row : ws2.rows(false))
+//     {
+//         if (row[0].to_string() == "Guest Name")
+//             continue;
+//         string name = row[0].to_string();
+//         string gender = row[1].to_string();
+//         int phoneNum = stoi(row[2].to_string());
+//         string checkInDate = row[3].to_string();
+//         string checkOutDate = row[4].to_string();
+//         int roomId = stoi(row[5].to_string());
+//         string roomType = row[6].to_string();
+//         string equipments = row[7].to_string();
+//         float pricePerNight = stof(row[8].to_string());
+//         int isAvailable;
+//         if (row[9].to_string() == "Available")
+//         {
+//             isAvailable = 1;
+//         }
+//         else if (row[9].to_string() == "Booked")
+//         {
+//             isAvailable = 0;
+//         }
+
+//         Room roomBookingData(name , gender, phoneNum,checkInDate, checkOutDate, roomType, equipments, pricePerNight, isAvailable);
+//         //    Room(int roomId, string roomtype, string equipments, float pricePerNight, int isAvailable)
+
+//         roomLists.push_back(roomBookingData);
+//     }
+
+//     return roomLists;
+// }
+
 int main()
 {
     system("cls");
     vector<Room> roomLists;
+    string filename = "roomListsStorage.xlsx";
     vector<Guest> bookHistory;
 
-    roomLists.push_back(
-        Room(101, "Single", "Fan, Wifi, TV", 18, 1));
-    roomLists.push_back(
-        Room(102, "Single", "Fan, Wifi, TV", 18, 1));
-    roomLists.push_back(
-        Room(103, "Double", "AC, Wifi, TV", 28, 1));
-    roomLists.push_back(
-        Room(104, "VIPsingle", "AC, FastWifi, HDTV, foods, drinks", 50, 1));
-    roomLists.push_back(
-        Room(105, "VIPdouble", "AC, FastWifi, HDTV, foods, drinks, snacks", 100, 1));
+    // roomLists.push_back(
+    //     Room(101, "Single", "Fan, Wifi, TV", 18, 1));
+    // roomLists.push_back(
+    //     Room(102, "Single", "Fan, Wifi, TV", 18, 1));
+    // roomLists.push_back(
+    //     Room(103, "Double", "AC, Wifi, TV", 28, 1));
+    // roomLists.push_back(
+    //     Room(104, "VIPsingle", "AC, FastWifi, HDTV, foods, drinks", 50, 1));
+    // roomLists.push_back(
+    //     Room(105, "VIPdouble", "AC, FastWifi, HDTV, foods, drinks, snacks", 100, 1));
+
+    roomLists = readRoomFromExcel(filename);
+    
+    vector<Room> bookedRooms = readBookingFromSheet(filename, "Booked Room");
+
+    mergeBookingData(roomLists, bookedRooms);
 
     vector<string> adminMenuList = {
         "1. Add new room ",
@@ -531,7 +977,8 @@ int main()
         "3. Show All Rooms ",
         "4. Search Room ",
         "5. Delete Room ",
-        "6. Logout "};
+        "6. Check out Room ",
+        "7. Logout "};
     vector<string> guestMenuList = {
         "1. Show All Rooms ",
         "2. Sort Rooms  ",
@@ -556,6 +1003,8 @@ int main()
             do
             {
                 system("cls");
+                bookedRooms = readBookingFromSheet(filename, "Booked Room");
+                roomLists = readRoomFromExcel(filename);
                 printMenuAsTable(adminMenuList, "Admin Console App");
 
                 cout << "CHoose your option(1-6): ";
@@ -566,9 +1015,11 @@ int main()
                 case 1:
                 {
                     printLabel("Add new room");
+                    
                     Room newRoom;
                     newRoom.input();
                     roomLists.push_back(newRoom);
+                    writeVectorToExcel(filename, roomLists);
                     cout << "New Room added successfully!" << endl;
                 }
                 break;
@@ -592,6 +1043,7 @@ int main()
                         Room roomUpdate = *result;
                         roomUpdate.update();
                         *result = roomUpdate;
+                        writeVectorToExcel(filename, roomLists);
                         cout << "Successfully Updated the room!" << endl;
                     }
                     else
@@ -604,8 +1056,12 @@ int main()
                 {
                     printLabel("Show all Room");
                     // displayRoom(roomLists);
+                    roomLists = readRoomFromExcel(filename);
+                    bookedRooms = readBookingFromSheet(filename, "Booked Room");
+                    mergeBookingData(roomLists, bookedRooms);
                     Admin a1;
                     a1.displayRoom(roomLists);
+                    
                 }
 
                 break;
@@ -633,6 +1089,7 @@ int main()
                     if (result != roomLists.end())
                     {
                         roomLists.erase(result);
+                        writeVectorToExcel(filename, roomLists);
                         cout << "Delete Room successfully!" << endl;
                     }
                     else
@@ -641,18 +1098,47 @@ int main()
                     }
                 }
                 break;
-                case 6:
+                case 6:{
+                    int roomId;
+                    printLabel("CheckOut Room");
+                    cout << "Enter Room ID: ";
+                    cin >> roomId;
+
+                    auto result = find_if(
+                        roomLists.begin(),
+                        roomLists.end(),
+                        [&](Room &room)
+                        {
+                            return room.getRoomId() == roomId;
+                        });
+                    if (result != roomLists.end())
+                    {
+                        cout << "Room ID found!" << endl;
+                        Room roomUpdate = *result;
+                        roomUpdate.setAvailable(1);
+                        *result = roomUpdate;
+                        writeVectorToExcel(filename, roomLists);
+                        cout << "Successfully Checkout the room!" << endl;
+                    }
+                    else
+                    {
+                        cout << "Room Not found!" << endl;
+                    }
+                }
+                    break;
+                case 7:
                     cout << "Exit from the program" << endl;
                     break;
                 default:
                     cout << "Invalid option! Choose again from 1-6" << endl;
                     break;
                 }
-                if(adminOption != 6){
+                if (adminOption != 7)
+                {
                     pressEnter();
                 }
 
-            } while (adminOption != 6);
+            } while (adminOption != 7);
         }
         else if (name == "guest" && password == "guest123")
         {
@@ -767,7 +1253,7 @@ int main()
                 {
                     printLabel("Booking Room Section");
                     Guest gs;
-                    gs.bookingRoom(roomLists);
+                    gs.bookingRoom(roomLists, filename);
                 }
                 break;
                 case 4:
