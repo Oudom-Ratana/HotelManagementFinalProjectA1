@@ -35,7 +35,6 @@ public:
     void input();
     void update();
 
-    // Getters
     string getName();
     string getGender();
     int getPhoneNum();
@@ -48,7 +47,6 @@ public:
     int getAvailability();
     string getAvailabilityString();
 
-    // Setters
     void setRoomId(int roomId);
     void setRoomType(string roomType);
     void setEquipment(string equipments);

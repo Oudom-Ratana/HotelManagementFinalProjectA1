@@ -1,4 +1,5 @@
 #include "../include/ExcelUtil.hpp"
+#include "../include/Color.hpp"
 #include <xlnt/xlnt.hpp>
 #include <iostream>
 #include <algorithm>
@@ -28,7 +29,7 @@ void writeBookingToSheet(string filename, string sheetName, vector<Room>& roomLi
 {
     workbook wb;
     try { wb.load(filename); }
-    catch (...) { cout << "Cannot write into the file"; }
+    catch (...) { printError("Cannot write into the file"); }
 
     worksheet ws;
     if (wb.contains(sheetName))
@@ -67,7 +68,7 @@ void writeBookingToSheet(string filename, string sheetName, vector<Room>& roomLi
         }
     }
     wb.save(filename);
-    cout << "Booking sheet saved." << endl;
+    printSuccess("Booking sheet saved.");
 }
 
 vector<Room> readBookingFromSheet(string filename, string sheetName)
@@ -77,12 +78,11 @@ vector<Room> readBookingFromSheet(string filename, string sheetName)
     try { wb.load(filename); }
     catch (...)
     {
-        cout << "Cannot read data from file!" << endl;
+        printError("Cannot read data from file!");
         return roomLists;
     }
     if (!wb.contains(sheetName))
     {
-        cout << "Sheet does not exist!" << endl;
         return roomLists;
     }
     worksheet ws = wb.sheet_by_title(sheetName);
@@ -114,6 +114,9 @@ void writeVectorToExcel(string filename, vector<Room> roomLists)
     if (wb.contains("Room Data"))
         wb.remove_sheet(wb.sheet_by_title("Room Data"));
 
+    if (wb.contains("Sheet1"))
+        wb.remove_sheet(wb.sheet_by_title("Sheet1"));
+
     worksheet ws = wb.create_sheet();
     ws.title("Room Data");
 
@@ -134,7 +137,7 @@ void writeVectorToExcel(string filename, vector<Room> roomLists)
         row++;
     }
     wb.save(filename);
-    cout << "Successfully saved data to excel file!!!" << endl;
+    printSuccess("Successfully saved data to excel file!!!");
 }
 
 vector<Room> readRoomFromExcel(string &filename)
@@ -144,12 +147,12 @@ vector<Room> readRoomFromExcel(string &filename)
     try { wb.load(filename); }
     catch (...)
     {
-        cout << "Cannot read the data from file" << endl;
+        printError("Cannot read the data from file");
         return roomLists;
     }
     if (!wb.contains("Room Data"))
     {
-        cout << "Sheet 'Room Data' not found." << endl;
+        printWarning("Sheet 'Room Data' not found.");
         return roomLists;
     }
     worksheet ws = wb.sheet_by_title("Room Data");
@@ -192,6 +195,6 @@ void removeBookingFromSheet(string filename, string sheetName, int roomId)
     {
         ws.delete_rows(rowToDelete, 1);
         wb.save(filename);
-        cout << "Booking record removed from sheet." << endl;
+        printInfo("Booking record removed from sheet.");
     }
 }

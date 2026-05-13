@@ -26,7 +26,9 @@ add_executable(HotelManagementApp
     main.cpp
     src/Room.cpp
     src/ExcelUtil.cpp
-    src/MenuUtils.cpp)
+    src/MenuUtils.cpp
+    
+    )
 
 # Link libraries
 target_link_libraries(HotelManagementApp PRIVATE xlnt tabulate)

@@ -1,6 +1,7 @@
 #include "include/Room.hpp"
 #include "include/ExcelUtil.hpp"
 #include "include/MenuUtils.hpp"
+#include "include/Color.hpp"
 #include <iostream>
 #include <vector>
 #include <cstdlib>
@@ -9,13 +10,17 @@ using namespace std;
 
 int main()
 {
+    enableAnsiColors();
     system("cls");
+    printBanner();
+
     vector<Room> roomLists;
     string filename = "roomListsStorage.xlsx";
 
     roomLists = readRoomFromExcel(filename);
     if (roomLists.empty())
     {
+        printInfo("No existing data. Creating default rooms...");
         roomLists.push_back(Room(101, "Single", "Fan, Wifi, TV", 18, 1));
         roomLists.push_back(Room(102, "Single", "Fan, Wifi, TV", 18, 1));
         roomLists.push_back(Room(103, "Double", "AC, Wifi, TV", 28, 1));
@@ -48,9 +53,10 @@ int main()
     do
     {
         system("cls");
-        cout << "Enter Username: ";
+        printBanner();
+        printColored("Enter Username: ", CYAN);
         cin >> name;
-        cout << "Enter Password: ";
+        printColored("Enter Password: ", CYAN);
         cin >> password;
 
         if (name == "admin" && password == "admin123")
@@ -63,7 +69,7 @@ int main()
                 roomLists = readRoomFromExcel(filename);
                 mergeBookingData(roomLists, bookedRooms);
                 printMenuAsTable(adminMenuList, "Admin Console App");
-                cout << "CHoose your option(1-6): ";
+                printColored("Choose your option(1-7): ", YELLOW);
                 cin >> adminOption;
 
                 switch (adminOption)
@@ -75,29 +81,29 @@ int main()
                     newRoom.input();
                     roomLists.push_back(newRoom);
                     writeVectorToExcel(filename, roomLists);
-                    cout << "New Room added successfully!" << endl;
+                    printSuccess("New Room added successfully!");
                 }
                 break;
                 case 2:
                 {
                     int roomId;
                     printLabel("Update Room");
-                    cout << "Enter Room ID: ";
+                    printColored("Enter Room ID: ", CYAN);
                     cin >> roomId;
                     auto result = find_if(roomLists.begin(), roomLists.end(),
                                           [&](Room &room) { return room.getRoomId() == roomId; });
                     if (result != roomLists.end())
                     {
-                        cout << "Room ID found!" << endl;
+                        printSuccess("Room ID found!");
                         Room roomUpdate = *result;
                         roomUpdate.update();
                         *result = roomUpdate;
                         writeVectorToExcel(filename, roomLists);
-                        cout << "Successfully Updated the room!" << endl;
+                        printSuccess("Successfully Updated the room!");
                     }
                     else
                     {
-                        cout << "Room Not found!" << endl;
+                        printError("Room Not found!");
                     }
                 }
                 break;
@@ -118,7 +124,8 @@ int main()
                 case 5:
                 {
                     int roomId;
-                    cout << "Enter Room ID: ";
+                    printLabel("Delete Room by ID");
+                    printColored("Enter Student ID: ", CYAN);
                     cin >> roomId;
                     auto result = find_if(roomLists.begin(), roomLists.end(),
                                           [&](Room &room) { return room.getRoomId() == roomId; });
@@ -126,11 +133,11 @@ int main()
                     {
                         roomLists.erase(result);
                         writeVectorToExcel(filename, roomLists);
-                        cout << "Delete Room successfully!" << endl;
+                        printSuccess("Delete Room successfully!");
                     }
                     else
                     {
-                        cout << "Room doesn't exist. Can't delete!" << endl;
+                        printError("Room doesn't exist. Can't delete!");
                     }
                 }
                 break;
@@ -138,31 +145,31 @@ int main()
                 {
                     int roomId;
                     printLabel("CheckOut Room");
-                    cout << "Enter Room ID: ";
+                    printColored("Enter Room ID: ", CYAN);
                     cin >> roomId;
                     auto result = find_if(roomLists.begin(), roomLists.end(),
                                           [&](Room &room) { return room.getRoomId() == roomId; });
                     if (result != roomLists.end())
                     {
-                        cout << "Room ID found!" << endl;
+                        printSuccess("Room ID found!");
                         Room roomUpdate = *result;
                         roomUpdate.setAvailable(1);
                         *result = roomUpdate;
                         writeVectorToExcel(filename, roomLists);
                         removeBookingFromSheet(filename, "Booked Room", roomId);
-                        cout << "Successfully Checkout the room!" << endl;
+                        printSuccess("Successfully Checkout the room!");
                     }
                     else
                     {
-                        cout << "Room Not found!" << endl;
+                        printError("Room Not found!");
                     }
                 }
                 break;
                 case 7:
-                    cout << "Exit from the program" << endl;
+                    printInfo("Exit from the program");
                     break;
                 default:
-                    cout << "Invalid option! Choose again from 1-6" << endl;
+                    printError("Invalid option! Choose again from 1-6");
                     break;
                 }
                 if (adminOption != 7)
@@ -176,7 +183,7 @@ int main()
             {
                 system("cls");
                 printMenuAsTable(guestMenuList, "Guest console App");
-                cout << "Please choose the option above : ";
+                printColored("Please choose the option above : ", YELLOW);
                 cin >> guestOption;
 
                 vector<Room> freshRooms = readRoomFromExcel(filename);
@@ -202,7 +209,7 @@ int main()
                         cout << "1. Sort By ID." << endl;
                         cout << "2. Sort By Price." << endl;
                         cout << "3. Exit" << endl;
-                        cout << "Choose sort option above: ";
+                        printColored("Choose sort option above: ", YELLOW);
                         cin >> sortOpt;
                         switch (sortOpt)
                         {
@@ -214,7 +221,7 @@ int main()
                             cout << "1. Sort from smallest to largest" << endl;
                             cout << "2. Sort from largest to smallest" << endl;
                             cout << "3. Exit" << endl;
-                            cout << "Choose sort option above: ";
+                            printColored("Choose sort option above: ", YELLOW);
                             cin >> sortByIdOpt;
                             switch (sortByIdOpt)
                             {
@@ -233,7 +240,7 @@ int main()
                             case 3:
                                 break;
                             default:
-                                cout << "No option to choose" << endl;
+                                printError("No option to choose");
                                 break;
                             }
                         }
@@ -246,7 +253,7 @@ int main()
                             cout << "1. Sort from smallest to largest" << endl;
                             cout << "2. Sort from largest to smallest" << endl;
                             cout << "3. Exit" << endl;
-                            cout << "Choose sort option above: ";
+                            printColored("Choose sort option above: ", YELLOW);
                             cin >> sortByPriceOpt;
                             switch (sortByPriceOpt)
                             {
@@ -265,7 +272,7 @@ int main()
                             case 3:
                                 break;
                             default:
-                                cout << "No option to choose" << endl;
+                                printError("No option to choose");
                                 break;
                             }
                         }
@@ -273,7 +280,7 @@ int main()
                         case 3:
                             break;
                         default:
-                            cout << "No Sort option" << endl;
+                            printError("No Sort option");
                             break;
                         }
                         if (sortOpt != 3)
@@ -303,10 +310,10 @@ int main()
                 }
                 break;
                 case 6:
-                    cout << "Logout from guestOption successfully!" << endl;
+                    printInfo("Logout from guestOption successfully!");
                     break;
                 default:
-                    cout << "No option to choose ! <<< Choose again >>>";
+                    printError("No option to choose ! <<< Choose again >>>");
                     break;
                 }
                 pressEnter();
@@ -314,10 +321,11 @@ int main()
         }
         else
         {
-            cout << "Login failed! Please try again!" << endl;
+            printError("Login failed! Please try again!");
         }
         pressEnter();
         countError++;
     } while (countError < 3);
+
     return 0;
 }

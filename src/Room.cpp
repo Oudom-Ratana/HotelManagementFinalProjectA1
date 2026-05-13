@@ -1,5 +1,6 @@
 #include "../include/Room.hpp"
 #include "../include/ExcelUtil.hpp"
+#include "../include/Color.hpp"
 #include <sstream>
 #include <algorithm>
 #include <iomanip>
@@ -34,27 +35,27 @@ Room::Room(string name, string gender, int phoneNum, string checkInDate, string 
 
 void Room::input()
 {
-    cout << "Enter roomID: ";
+    printColored("Enter roomID: ", CYAN);
     cin >> roomId;
     cin.ignore();
-    cout << "Enter Room Type(Single, Double, VIPsingle, VIPdouble): ";
+    printColored("Enter Room Type(Single, Double, VIPsingle, VIPdouble): ", CYAN);
     cin >> roomType;
     cin.ignore();
-    cout << "Enter Equipments: ";
+    printColored("Enter Equipments: ", CYAN);
     getline(cin, equipments);
-    cout << "Enter price/Night: ";
+    printColored("Enter price/Night: ", CYAN);
     cin >> pricePerNight;
 }
 
 void Room::update()
 {
     cin.ignore();
-    cout << "Enter Room Type(Single, Double, VIPsingle, VIPdouble): ";
+    printColored("Enter Room Type(Single, Double, VIPsingle, VIPdouble): ", CYAN);
     cin >> roomType;
-    cout << "Enter Equipments: ";
+    printColored("Enter Equipments: ", CYAN);
     cin.ignore();
     getline(cin, equipments);
-    cout << "Enter price/Night: ";
+    printColored("Enter price/Night: ", CYAN);
     cin >> pricePerNight;
 }
 
@@ -85,20 +86,20 @@ string Room::getAvailabilityString()
 void Guest::bookingRoom(vector<Room> &roomLists, string &filename)
 {
     cin.ignore();
-    cout << "Enter Your Name: ";
+    printColored("Enter Your Name: ", CYAN);
     getline(cin, name);
-    cout << "Enter Your gender: ";
+    printColored("Enter Your gender: ", CYAN);
     getline(cin, gender);
-    cout << "Enter Your Phone Number: ";
+    printColored("Enter Your Phone Number: ", CYAN);
     cin >> phoneNum;
-    cout << "Enter Room ID: ";
+    printColored("Enter Room ID: ", CYAN);
     cin >> roomIdBook;
     cin.ignore();
-    cout << "Enter CheckIn Date(dd/mm/yyyy): ";
+    printColored("Enter CheckIn Date(dd/mm/yyyy): ", CYAN);
     getline(cin, checkInDate);
-    cout << "Enter CheckOut Date(dd/mm/yyyy): ";
+    printColored("Enter CheckOut Date(dd/mm/yyyy): ", CYAN);
     getline(cin, checkOutDate);
-    cout << "Comfirm Booking?(Y/N): ";
+    printColored("Comfirm Booking?(Y/N): ", YELLOW);
     cin >> comfirmBooking;
     if (comfirmBooking == 'y' || comfirmBooking == 'Y')
     {
@@ -114,16 +115,16 @@ void Guest::bookingRoom(vector<Room> &roomLists, string &filename)
             result->checkOutDate = checkOutDate;
             writeVectorToExcel(filename, roomLists);
             writeBookingToSheet(filename, "Booked Room", roomLists);
-            cout << "Successfully Booked the room!" << endl;
+            printSuccess("Successfully Booked the room!");
         }
         else
         {
-            cout << "Room Not found!" << endl;
+            printError("Room Not found!");
         }
     }
     else
     {
-        cout << "Booking Cancelled!" << endl;
+        printWarning("Booking Cancelled!");
     }
 }
 
@@ -134,7 +135,7 @@ void Guest::showReceipt(vector<Room> &roomLists)
     if (result != roomLists.end())
     {
         int guestPhone;
-        cout << "Enter your phone number to see your receipt: ";
+        printColored("Enter your phone number to see your receipt: ", CYAN);
         cin >> guestPhone;
         bool found = false;
         Table table;
@@ -158,38 +159,43 @@ void Guest::showReceipt(vector<Room> &roomLists)
         }
         else
         {
-            cout << "No booking found for phone number " << guestPhone << endl;
+            printError("No booking found for phone number " + to_string(guestPhone));
         }
     }
     else
     {
-        cout << "No Room Booked !!!" << endl;
+        printWarning("No Room Booked !!!");
     }
 }
 
 void Guest::searchGuestRoomById(vector<Room> &roomLists)
 {
     int roomId;
-    cout << "Enter Room ID: ";
+    printColored("Enter Room ID: ", CYAN);
     cin >> roomId;
     auto result = find_if(roomLists.begin(), roomLists.end(),
                           [&](Room &room) { return room.getRoomId() == roomId && room.getAvailability() == 1; });
     if (result != roomLists.end())
     {
-        cout << "Room  <" << roomId << "> Found!" << endl;
+        printSuccess("Room  <" + to_string(roomId) + "> Found!");
         Table table;
         table.add_row({"RoomID", "RoomType", "Equipments", "Price/night($)", "Availability"});
         stringstream ss;
         Room room = *result;
         ss << fixed << setprecision(2) << room.getPricePerNight();
         string priceStr = ss.str();
-        table.add_row({to_string(room.getRoomId()), room.getRoomType(), room.getEquipments(), priceStr, room.getAvailabilityString()});
+        string avail = room.getAvailabilityString();
+        if (avail == "Available")
+            avail = GREEN + avail + RESET;
+        else
+            avail = RED + avail + RESET;
+        table.add_row({to_string(room.getRoomId()), room.getRoomType(), room.getEquipments(), priceStr, avail});
         table[0].format().font_style({FontStyle::bold}).font_align({FontAlign::center});
         cout << table << endl;
     }
     else
     {
-        cout << "Room Not Found!" << endl;
+        printError("Room Not Found!");
     }
 }
 
@@ -199,11 +205,14 @@ void Guest::displayRoomForGuest(vector<Room> &roomlists)
     table.add_row({"RoomID", "RoomType", "Equipments", "Price/night($)", "Availability"});
     for (auto rooms : roomlists)
     {
-        stringstream ss;
-        ss << fixed << setprecision(2) << rooms.getPricePerNight();
-        string priceStr = ss.str();
         if (rooms.getAvailabilityString() == "Available")
-            table.add_row({to_string(rooms.getRoomId()), rooms.getRoomType(), rooms.getEquipments(), priceStr, rooms.getAvailabilityString()});
+        {
+            stringstream ss;
+            ss << fixed << setprecision(2) << rooms.getPricePerNight();
+            string priceStr = ss.str();
+            string avail = GREEN + rooms.getAvailabilityString() + RESET;
+            table.add_row({to_string(rooms.getRoomId()), rooms.getRoomType(), rooms.getEquipments(), priceStr, avail});
+        }
     }
     table[0].format().font_style({FontStyle::bold}).font_align({FontAlign::center});
     cout << table << endl;
@@ -246,7 +255,12 @@ void Admin::displayRoom(vector<Room> &roomLists)
         stringstream ss;
         ss << fixed << setprecision(2) << rooms.getPricePerNight();
         string priceStr = ss.str();
-        table.add_row({to_string(rooms.getRoomId()), rooms.getRoomType(), rooms.getEquipments(), priceStr, rooms.getAvailabilityString()});
+        string avail = rooms.getAvailabilityString();
+        if (avail == "Available")
+            avail = GREEN + avail + RESET;
+        else
+            avail = RED + avail + RESET;
+        table.add_row({to_string(rooms.getRoomId()), rooms.getRoomType(), rooms.getEquipments(), priceStr, avail});
     }
     table[0].format().font_style({FontStyle::bold}).font_align({FontAlign::center});
     cout << table << endl;
@@ -255,26 +269,31 @@ void Admin::displayRoom(vector<Room> &roomLists)
 void Admin::searchRoomById(vector<Room> &roomLists)
 {
     int roomId;
-    cout << "Enter Room ID: ";
+    printColored("Enter Room ID: ", CYAN);
     cin >> roomId;
     auto result = find_if(roomLists.begin(), roomLists.end(),
                           [&](Room &room) { return room.getRoomId() == roomId; });
     if (result != roomLists.end())
     {
-        cout << "Room  <" << roomId << "> Found!" << endl;
+        printSuccess("Room  <" + to_string(roomId) + "> Found!");
         Table table;
         table.add_row({"RoomID", "RoomType", "Equipments", "Price/night($)", "Availability"});
         stringstream ss;
         Room room = *result;
         ss << fixed << setprecision(2) << room.getPricePerNight();
         string priceStr = ss.str();
-        table.add_row({to_string(room.getRoomId()), room.getRoomType(), room.getEquipments(), priceStr, room.getAvailabilityString()});
+        string avail = room.getAvailabilityString();
+        if (avail == "Available")
+            avail = GREEN + avail + RESET;
+        else
+            avail = RED + avail + RESET;
+        table.add_row({to_string(room.getRoomId()), room.getRoomType(), room.getEquipments(), priceStr, avail});
         table[0].format().font_style({FontStyle::bold}).font_align({FontAlign::center});
         cout << table << endl;
     }
     else
     {
-        cout << "Room Not Found!" << endl;
+        printError("Room Not Found!");
     }
 }
 
