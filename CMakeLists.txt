@@ -22,7 +22,11 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(tabulate)
 
 # Add your main.cpp or other source files
-add_executable(HotelManagementApp main.cpp)
+add_executable(HotelManagementApp 
+    main.cpp
+    src/Room.cpp
+    src/ExcelUtil.cpp
+    src/MenuUtils.cpp)
 
 # Link libraries
 target_link_libraries(HotelManagementApp PRIVATE xlnt tabulate)
